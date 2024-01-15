@@ -1,178 +1,155 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import styles from "../Dashboard.module.css";
-import { useMutation } from "@apollo/client";
-import { SAVE_NEWS } from "../utils/mutations";
+import { useEffect, useState } from 'react';
 
-const MAPBOX_TOKEN =
-  "pk.eyJ1Ijoic3dteXRob3MiLCJhIjoiY2xsbXc5MmE1MDRjMjNla3F6bDhueTV5OSJ9.cu9Y3UeEMkFTX45o0UDaSw";
-const NEWS_API_KEY = "d110f838776743f3a01ae78763f27418";
+import { Container, Card, Button, Row, Col } from 'react-bootstrap';
 
-function Dashboard() {
-  const map = useRef(null);
-  const mapContainer = useRef(null);
-  const [news, setNews] = useState([]);
-  const [locationDetails, setLocationDetails] = useState(null);
-  const [isNewsVisible, setIsNewsVisible] = useState(true);
+import { useCurrentUserContext } from '../context/CurrentUser';
 
-  const fetchNewsForCountry = async (countryCode) => {
-    const response = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=${countryCode}&apiKey=${NEWS_API_KEY}`
-    );
-    const data = await response.json();
-    console.log(data);
+import Auth from '../utils/auth';
+import { deleteNewsId } from '../utils/localStorage';
+import { useMutation, useQuery } from '@apollo/client';
+import { QUERY_CURRENT_USER } from '../utils/queries';
+import { DELETE_NEWS } from '../utils/mutations';
 
-    if (data && data.status === "ok" && Array.isArray(data.articles)) {
-      setNews(data.articles);
-      setIsNewsVisible(true); // Make news box reappear each time new news is set
-    } else {
-      console.error("Unexpected data format from API:", data);
-      setNews([]);
-    }
-  };
-
-  const onMapClick = useCallback(async (e) => {
-    const lngLat = e.lngLat;
-    const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${MAPBOX_TOKEN}`
-    );
-    const data = await response.json();
-
-    if (data && data.features && data.features.length) {
-      const placeName = data.features[0].place_name;
-      const countryCode = data.features[0].context.find(
-        (c) => c.id.indexOf("country") === 0
-      )?.short_code;
-
-      setLocationDetails(placeName);
-      if (countryCode) {
-        fetchNewsForCountry(countryCode);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (map.current) return;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/swmythos/cllq0tvmh00jm01p9d4q123ar",
-      center: [-74.5, 40],
-      zoom: 2,
-      pitch: 10,
-      bearing: 0,
-      projection: "globe",
-      accessToken: MAPBOX_TOKEN,
-    });
-
-    map.current.on("click", onMapClick);
-  }, [onMapClick]);
-
-  const [savedNews, setSavedNews] = useState({
-    newsId: "",
-    title: "",
-    summary: "",
-    url: "",
-    image: "",
+const Dashboard = () => {
+  const { currentUser } = useCurrentUserContext();
+  console.log(currentUser);
+  const { loading, data } = useQuery(QUERY_CURRENT_USER, {
+    variables: { email: currentUser.email },
   });
-  const [saveNews, { error }] = useMutation(SAVE_NEWS);
+  console.log(data);
+  const userData = data?.currentUser || null;
+  // const [userData, setUserData] = useState(data?.currentUser || null);
+  const [deleteNews, { error }] = useMutation(DELETE_NEWS);
+  // useEffect(() => setUserData(data?.currentUser || null), [data]);
 
-  const handleSaveNews = async (newsItem, event) => {
-    event.stopPropagation();
-    event.preventDefault();
+  // create function that accepts the news's mongo _id value as param and deletes the news article from the database
+  const handleDeleteNews = async newsId => {
+    const token = Auth.loggedIn() ? Auth.getToken() : null;
+
+    if (!token) {
+      return false;
+    }
+
     try {
-      let variables = {
-        saveNews: {
-          newsId: newsItem.publishedAt + newsItem.source.name + newsItem.author,
-          title: newsItem.title,
-          summary: newsItem.description,
-          url: newsItem.url,
-          image: newsItem.urlToImage,
-        },
-      };
-
-      const mutationResponse = await saveNews({
-        variables: variables,
+      const response = await deleteNews({
+        variables: { newsId },
       });
 
-      console.log("Mutation response:", mutationResponse);
-      const { token, currentUser } = mutationResponse.data.saveNews;
-    } catch (e) {
-      console.log(e);
+      if (!response.ok) {
+        throw new Error('something went wrong!');
+      }
+
+      // upon success, remove book's id from localStorage
+      deleteNewsId(newsId);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  return (
-    <div className={styles.dashboardContainer}>
-      <div ref={mapContainer} className={styles.dashboardMapContainer}>
-        {locationDetails && (
-          <div className={styles.locationInfoBox}>
-            <p>{locationDetails}</p>
-          </div>
-        )}
-      </div>
+  // if data isn't here yet, say so
+  if (!userData) {
+    return <h2>LOADING...</h2>;
+  }
 
-      {news.length > 0 && isNewsVisible && (
-        <div className={styles.newsInfoBox}>
-          {" "}
-          {/* Use your CSS class here */}
-          <h4 className=" text-white  text-3xl text-center w-full top-0">
-            LATEST NEWS
-          </h4>
-          <div
-            className=" p-5 bg-transparent max-w-[20rem] z-10 overflow-y-scroll h-[600px] rounded-5 shadow-md flex flex-col items-center"
-            onClick={(e) => {
-              // Check if the target is the container itself
-              if (e.target === e.currentTarget) {
-                setIsNewsVisible(false);
-              }
-            }}
+  return (
+    <>
+      <div
+        className="
+      relative
+      bg-newsGray
+      h-full
+      w-full
+      top-0
+      "
+      >
+        <div
+          className="
+        text-center 
+        text-3xl 
+        font-bold 
+        pt-2
+        "
+        >
+          <h1 class>{userData?.firstName}'s Saved News</h1>
+        </div>
+        <div
+          className="
+        top-0 
+        w-full
+        "
+        >
+          <h2
+            className="
+          pt-0 
+          mb-2 
+          font-bold
+          text-center
+          "
           >
-            {news.map((newsItem, index) => (
-              <div
-                key={index}
-                className="mb-5 p-4 bg-white rounded-[0.375rem] shadow-md transition-transform duration-200 ease-in-out transform hover:-translate-y-2 hover:shadow-lg newsCard"
-              >
-                {newsItem.urlToImage && (
-                  <a
-                    href={newsItem.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      className={styles.newsItemImage}
-                      src={newsItem.urlToImage}
-                      alt={newsItem.title}
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                    />
-                  </a>
-                )}
-                <h5>
-                  <a
-                    className={styles.newsTitleLink}
-                    href={newsItem.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {newsItem.title}
-                  </a>
-                </h5>
-                <p>{newsItem.description}</p>
-                <button
-                  className="float-right bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                  onClick={(event) => handleSaveNews(newsItem, event)}
+            {userData?.savedNews.length
+              ? `${userData.savedNews.length} Saved Headlines`
+              : 'You have no saved news!'}
+          </h2>
+          <div
+            className="
+          w-full
+          grid 
+          grid-cols-1
+          md:grid-cols-2
+          lg:grid-cols-2 
+          xl:grid-cols-3
+          2xl:grid-cols-4
+          gap-2
+          px-5"
+          >
+            {userData?.savedNews.map(news => {
+              return (
+                <div
+                  className="
+                    mb-2 
+                    w-full
+                    bg-newsGrayBlue 
+                    rounded 
+                    shadow-xl"
                 >
-                  Save
-                </button>
-              </div>
-            ))}
+                  <Card key={news.newsId}>
+                    {news.image ? (
+                      <Card.Img
+                        src={news.image}
+                        alt={`Cover image for ${news.title}`}
+                        variant="top"
+                        className="rounded shadow-xl"
+                      />
+                    ) : null}
+                    <Card.Body className="p-3">
+                      <Card.Title className="font-bold text-white text-lg">
+                        {news.title}
+                      </Card.Title>
+
+                      <Card.Text className="leading-relaxed text-md">
+                        {news.summary}
+                      </Card.Text>
+
+                      <a className="text-blue-600" href={news.url}>
+                        Read the full article here!
+                      </a>
+
+                      <Button
+                        className="btn-block text-red-600 btn-danger float-right"
+                        onClick={() => handleDeleteNews(news.newsId)}
+                      >
+                        Delete this article!
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
-}
+};
 
 export default Dashboard;

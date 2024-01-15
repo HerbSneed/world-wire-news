@@ -28,16 +28,12 @@ const userSchema = new Schema({
   },
   userDefaultNews: {
     type: String,
-    enum: ["World", "Select a country"],
+    enum: ["World", "United States", "China", "Russia", "India", "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh", "Mexico",
+      "Japan", "Germany", "France", "United Kingdom", "Italy", "South Africa", "Canada", "Australia", "Argentina", "Saudi Arabia",
+      "Egypt", "Turkey", "Iran", "Thailand", "South Korea", "Vietnam", "Malaysia", "Philippines", "Poland", "Ukraine",
+      "Spain", "Greece", "Switzerland", "Sweden", "Austria", "Czech Republic", "Hungary", "Portugal", "Romania", "Denmark",
+      "Finland", "Norway", "Ireland", "New Zealand", "Singapore"],
     default: "World",
-  },
-  selectedCountry: {
-    type: String,
-    validate: {
-      validator: function () {
-        return this.userDefaultNews === "Select a country";
-      },
-    },
   },
   savedNews: [newsSchema],
   resetPasswordToken: {

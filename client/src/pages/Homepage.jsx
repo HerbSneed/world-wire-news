@@ -1,153 +1,151 @@
-import { useEffect, useState } from 'react';
-
-import { Container, Card, Button, Row, Col } from 'react-bootstrap';
-
-import { useCurrentUserContext } from '../context/CurrentUser';
-
-import Auth from '../utils/auth';
-import { deleteNewsId } from '../utils/localStorage';
-import { useMutation, useQuery } from '@apollo/client';
-import { QUERY_CURRENT_USER } from '../utils/queries';
-import { DELETE_NEWS } from '../utils/mutations';
+import  { useEffect, useRef, useState } from "react";
+import { useQuery } from "@apollo/client";
+import { getCountryHeadlines, getHeadlines } from "../utils/news-api";
+import CountryHeader from "../components/Country-Header";
+import { useCurrentUserContext } from "../context/CurrentUser";
+import { QUERY_CURRENT_USER } from "../utils/queries";
+import { countryCodes } from "../utils/countryCodes";
 
 const Homepage = () => {
-  const { currentUser } = useCurrentUserContext();
-  console.log(currentUser);
-  const { loading, data } = useQuery(QUERY_CURRENT_USER, {
+  const [newsItems, setNewsItems] = useState([]);
+  const fetchNewsCalled = useRef(false);
+  const {currentUser} = useCurrentUserContext();
+
+  const { data } = useQuery(QUERY_CURRENT_USER, {
     variables: { email: currentUser.email },
   });
-  console.log(data);
   const userData = data?.currentUser || null;
-  // const [userData, setUserData] = useState(data?.currentUser || null);
-  const [deleteNews, { error }] = useMutation(DELETE_NEWS);
-  // useEffect(() => setUserData(data?.currentUser || null), [data]);
+  
 
-  // create function that accepts the news's mongo _id value as param and deletes the news article from the database
-  const handleDeleteNews = async newsId => {
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
-
-    if (!token) {
-      return false;
-    }
-
+useEffect(() => {
+  const fetchNews = async () => {
     try {
-      const response = await deleteNews({
-        variables: { newsId },
-      });
+      if (!userData || !userData.userDefaultNews) {
+        return;
+      }
+      const countryCodesList = countryCodes().map((country) => ({
+      name: country.name,
+      code: country.code,
+    }));
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
+      let response;
+
+      const countryObject = countryCodesList.find(
+        (country) => country.name === userData.userDefaultNews.trim()
+      );
+
+      console.log("Found Country Object:", countryObject);
+
+      const countryCode = countryObject ? countryObject.code : "World";
+      console.log("Final Country Code:", countryCode);
+
+      if (userData.userDefaultNews === "World") {
+        response = await getHeadlines();
+      } else {
+        response = await getCountryHeadlines(countryCode);
       }
 
-      // upon success, remove book's id from localStorage
-      deleteNewsId(newsId);
+
+      if (!response || !response.ok) {
+        console.error("Error in response:", response);
+        throw new Error("something went wrong!");
+      }
+
+      console.log("Response:", response)
+
+      const headlines = await response.json();
+
+
+if (Array.isArray(headlines.articles)) {
+  const newsData = headlines.articles
+    .filter((news) => {
+      // Check if the image URL is not null and does not include "410"
+    return news.urlToImage !== null && news.status !== "410";
+    })
+    .map((news) => ({
+      newsId: news.publishedAt + news.title,
+      title: news.title,
+      image: news.urlToImage,
+      url: news.url,
+    }));
+
+  console.log("News Data:", newsData);
+
+  setNewsItems(newsData);
+} else {
+  console.error("Headlines is not an array:", headlines);
+}
     } catch (err) {
       console.error(err);
+    } finally {
+      fetchNewsCalled.current = true;
     }
   };
 
-  // if data isn't here yet, say so
-  if (!userData) {
-    return <h2>LOADING...</h2>;
+  // Trigger the news fetch only if userData is available
+  if (userData) {
+    fetchNews();
   }
+}, [userData]);
+
+
 
   return (
     <>
-      <div
-        className="
-      relative
-      bg-newsGray
-      h-full
-      w-full
-      top-0
-      "
+      <section
+        id="country-links"
+        className="bg-white h-10 py-1 border-t-2 border-b-2 border-newsBlue overflow-hidden"
       >
-        <div
-          className="
-        text-center 
-        text-3xl 
-        font-bold 
-        pt-2
-        "
-        >
-          <h1 class>{userData?.firstName}'s Saved News</h1>
-        </div>
-        <div
-          className="
-        top-0 
-        w-full
-        "
-        >
-          <h2
-            className="
-          pt-0 
-          mb-2 
-          font-bold
-          text-center
-          "
-          >
-            {userData?.savedNews.length
-              ? `${userData.savedNews.length} Saved Headlines`
-              : 'You have no saved news!'}
+        <CountryHeader/>
+      </section>
+
+      <section id="top-five-hl" className="grid grid-cols-1 gap-y-2 px-2 mt-2">
+        {newsItems
+          .slice(0, 5)
+          .filter((news) => news.image) // Filter out items with null image
+          .map((news, index) => (
+            <div key={news.newsId}>
+              <div
+                className={`border-b-2 border-newsGray ${
+                  index === 4 ? "last:border-b-0" : ""
+                }`}
+              >
+                {news.image && (
+                  <img
+                    className="w-full"
+                    src={news.image}
+                    alt={`Image for ${news.title}`}
+                  />
+                )}
+                <h3 className="flex justify-center text-center font-medium p-1">
+                  {news.title}
+                </h3>
+              </div>
+            </div>
+          ))}
+      </section>
+
+      <section id="more-news-hl" className="grid grid-cols-1 gap-y-2 px-2 mt-2">
+        <div>
+          <h2 className="border-t-2 border-b-2 py-1 border-newsBlue h-10 font-bold">
+            {" "}
+            More News Headlines
           </h2>
-          <div
-            className="
-          w-full
-          grid 
-          grid-cols-1
-          md:grid-cols-2
-          lg:grid-cols-2 
-          xl:grid-cols-3
-          2xl:grid-cols-4
-          gap-2
-          px-5"
-          >
-            {userData?.savedNews.map(news => {
-              return (
-                <div
-                  className="
-                    mb-2 
-                    w-full
-                    bg-newsGrayBlue 
-                    rounded 
-                    shadow-xl"
-                >
-                  <Card key={news.newsId}>
-                    {news.image ? (
-                      <Card.Img
-                        src={news.image}
-                        alt={`Cover image for ${news.title}`}
-                        variant="top"
-                        className="rounded shadow-xl"
-                      />
-                    ) : null}
-                    <Card.Body className="p-3">
-                      <Card.Title className="font-bold text-white text-lg">
-                        {news.title}
-                      </Card.Title>
-
-                      <Card.Text className="leading-relaxed text-md">
-                        {news.summary}
-                      </Card.Text>
-
-                      <a className="text-blue-600" href={news.url}>
-                        Read the full article here!
-                      </a>
-
-                      <Button
-                        className="btn-block text-red-600 btn-danger float-right"
-                        onClick={() => handleDeleteNews(news.newsId)}
-                      >
-                        Delete this article!
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                </div>
-              );
-            })}
-          </div>
         </div>
-      </div>
+        {newsItems.slice(6, 11).map((news, index) => (
+          <div key={news.newsId}>
+            <div
+              className={`border-b-2 border-newsGray ${
+                index === 4 ? "last:border-b-0" : ""
+              }`}
+            >
+              <h3 className="flex justify-right font-medium p-1">
+                {news.title}
+              </h3>
+            </div>
+          </div>
+        ))}
+      </section>
     </>
   );
 };

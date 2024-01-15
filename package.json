@@ -28,7 +28,9 @@
     "react": "^18.2.0",
     "react-bootstrap": "^2.8.0",
     "react-dom": "^18.2.0",
-    "react-map-gl": "^7.1.5"
+    "react-map-gl": "^7.1.5",
+    "react-marquee": "^1.0.0",
+    "react-marquee-text": "^1.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

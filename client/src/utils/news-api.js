@@ -1,7 +1,10 @@
-var apiKey = "ab9c7cce208a4d04b3ce75bbf6ca7809";
+var apiKey = "72854b184e9b4fb88d7b85d9362f3e4a";
 
 export const getHeadlines = async () => {
-  return fetch(
-    `https://api.worldnewsapi.com/search-news?api-key=${apiKey}&earliest-publish-date=2023-08-23 12:00:00`
-  );
+  return fetch(`https://newsapi.org/v2/everything?q=headlines&apiKey=${apiKey}`);
 };
+
+export const getCountryHeadlines = async (countryCode) => {
+  return fetch(`https://newsapi.org/v2/top-headlines?q=${countryCode}&apiKey=${apiKey}`);
+}
+

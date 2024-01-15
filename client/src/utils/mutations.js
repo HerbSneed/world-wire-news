@@ -8,6 +8,7 @@ export const LOGIN_USER = gql`
         firstName
         lastName
         _id
+        userDefaultNews
       }
       token
     }
@@ -21,7 +22,6 @@ export const REGISTER_USER = gql`
     $email: String!
     $password: String!
     $userDefaultNews: String
-    $selectedCountry: String
   ) {
     register(
       firstName: $firstName
@@ -29,7 +29,6 @@ export const REGISTER_USER = gql`
       email: $email
       password: $password
       userDefaultNews: $userDefaultNews
-      selectedCountry: $selectedCountry
     ) {
       currentUser {
         firstName

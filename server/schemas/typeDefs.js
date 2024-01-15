@@ -7,7 +7,6 @@ const typeDefs = `#graphql
     password: String
     savedNews: [News]
     userDefaultNews: String
-    selectedCountry: String
   }
 
   type Auth {
@@ -54,7 +53,6 @@ const typeDefs = `#graphql
       email: String!
       password: String!
       userDefaultNews: String
-      selectedCountry: String
     ): Auth
     login(email: String!, password: String!): Auth
     saveNews(saveNews: NewsInput!): Auth

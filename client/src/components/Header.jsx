@@ -30,7 +30,7 @@ function Header() {
               className="text-blue-600 ml-3"
               onClick={handleHomepageClick}
             >
-              Homepage
+              Home
             </Link>
             <Link to="/dashboard" className="text-blue-600 ml-3">
               Dashboard

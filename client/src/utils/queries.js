@@ -7,6 +7,7 @@ export const QUERY_CURRENT_USER = gql`
       email
       firstName
       lastName
+      userDefaultNews
       savedNews {
         newsId
         title
