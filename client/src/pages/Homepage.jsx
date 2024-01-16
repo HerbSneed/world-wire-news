@@ -1,16 +1,23 @@
 import  { useEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
-import { getCountryHeadlines, getHeadlines } from "../utils/news-api";
+import {
+  getCountryHeadlines,
+  getHeadlines,
+  getSelectedHeadlines,
+} from "../utils/news-api";
 import CountryHeader from "../components/Country-Header";
 import { useCurrentUserContext } from "../context/CurrentUser";
 import { QUERY_CURRENT_USER } from "../utils/queries";
 import { countryCodes } from "../utils/countryCodes";
+import { useParams } from "react-router-dom";
 
 const Homepage = () => {
   const [newsItems, setNewsItems] = useState([]);
   const fetchNewsCalled = useRef(false);
   const {currentUser} = useCurrentUserContext();
+  const { code: selectedCountry } = useParams();
 
+  //QUERY_CURRENT_USER  
   const { data } = useQuery(QUERY_CURRENT_USER, {
     variables: { email: currentUser.email },
   });
@@ -20,61 +27,71 @@ const Homepage = () => {
 useEffect(() => {
   const fetchNews = async () => {
     try {
-      if (!userData || !userData.userDefaultNews) {
-        return;
-      }
-      const countryCodesList = countryCodes().map((country) => ({
-      name: country.name,
-      code: country.code,
-    }));
-
       let response;
 
-      const countryObject = countryCodesList.find(
-        (country) => country.name === userData.userDefaultNews.trim()
-      );
-
-      console.log("Found Country Object:", countryObject);
-
-      const countryCode = countryObject ? countryObject.code : "World";
-      console.log("Final Country Code:", countryCode);
-
-      if (userData.userDefaultNews === "World") {
-        response = await getHeadlines();
-      } else {
-        response = await getCountryHeadlines(countryCode);
+      if (!userData || (!userData.userDefaultNews && !selectedCountry)) {
+        // No user data or default news and no selected country, return
+        return;
       }
 
+      const countryCodesList = countryCodes().map((country) => ({
+        name: country.name,
+        code: country.code,
+        code3: country.code3,
+      }));
+
+      let countryCode;
+      console.log("Country_Code", countryCodesList); 
+
+      if (userData.userDefaultNews === "World" && !selectedCountry) {
+        // User default is World, and no selected country, fetch world headlines
+        response = await getHeadlines();
+      } else if (selectedCountry === "World") {
+        // Selected country is World, fetch world headlines
+        response = await getHeadlines();
+        console.log("Select _ World_Headline", response);
+      } else {
+        // Fetch headlines based on user default or selected country
+        const countryObject = countryCodesList.find(
+          (country) =>
+            country.name ===
+            (userData.userDefaultNews || selectedCountry).trim()
+        );
+
+        countryCode = countryObject ? countryObject.code : "World";
+        response = await getCountryHeadlines(countryCode);
+        console.log("Country_Code", countryCode);
+      }
 
       if (!response || !response.ok) {
         console.error("Error in response:", response);
         throw new Error("something went wrong!");
       }
 
-      console.log("Response:", response)
-
       const headlines = await response.json();
+      console.log("Headlines", headlines);
 
+      if (Array.isArray(headlines.articles)) {
+        const newsData = headlines.articles
+          .filter((news) => {
+            return (
+              news.title !== "[Removed]" &&
+              news.status !== "410" &&
+              news.status !== "404"
+            );
+          })
+          .map((news) => ({
+            newsId: news.publishedAt + news.title,
+            title: news.title,
+            image: news.urlToImage,
+            url: news.url,
+            description: news.description,
+          }));
 
-if (Array.isArray(headlines.articles)) {
-  const newsData = headlines.articles
-    .filter((news) => {
-      // Check if the image URL is not null and does not include "410"
-    return news.urlToImage !== null && news.status !== "410";
-    })
-    .map((news) => ({
-      newsId: news.publishedAt + news.title,
-      title: news.title,
-      image: news.urlToImage,
-      url: news.url,
-    }));
-
-  console.log("News Data:", newsData);
-
-  setNewsItems(newsData);
-} else {
-  console.error("Headlines is not an array:", headlines);
-}
+        setNewsItems(newsData);
+      } else {
+        console.error("Headlines is not an array:", headlines);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -82,12 +99,8 @@ if (Array.isArray(headlines.articles)) {
     }
   };
 
-  // Trigger the news fetch only if userData is available
-  if (userData) {
-    fetchNews();
-  }
-}, [userData]);
-
+  fetchNews();
+}, [userData, selectedCountry]);
 
 
   return (
@@ -96,52 +109,51 @@ if (Array.isArray(headlines.articles)) {
         id="country-links"
         className="bg-white h-10 py-1 border-t-2 border-b-2 border-newsBlue overflow-hidden"
       >
-        <CountryHeader/>
+        <CountryHeader />
       </section>
 
       <section id="top-five-hl" className="grid grid-cols-1 gap-y-2 px-2 mt-2">
-        {newsItems
-          .slice(0, 5)
-          .filter((news) => news.image) // Filter out items with null image
-          .map((news, index) => (
-            <div key={news.newsId}>
-              <div
-                className={`border-b-2 border-newsGray ${
-                  index === 4 ? "last:border-b-0" : ""
-                }`}
-              >
-                {news.image && (
-                  <img
-                    className="w-full"
-                    src={news.image}
-                    alt={`Image for ${news.title}`}
-                  />
-                )}
-                <h3 className="flex justify-center text-center font-medium p-1">
-                  {news.title}
-                </h3>
-              </div>
-            </div>
-          ))}
-      </section>
-
-      <section id="more-news-hl" className="grid grid-cols-1 gap-y-2 px-2 mt-2">
         <div>
-          <h2 className="border-t-2 border-b-2 py-1 border-newsBlue h-10 font-bold">
-            {" "}
-            More News Headlines
-          </h2>
+          <h2 className="text-2xl">Top News Headlines</h2>
         </div>
-        {newsItems.slice(6, 11).map((news, index) => (
+
+        {newsItems.slice(0, 5).map((news, index) => (
           <div key={news.newsId}>
             <div
               className={`border-b-2 border-newsGray ${
                 index === 4 ? "last:border-b-0" : ""
               }`}
             >
-              <h3 className="flex justify-right font-medium p-1">
+              {news.image && (
+                <img
+                  className="w-full"
+                  src={news.image}
+                  alt={`Image for ${news.title}`}
+                />
+              )}
+              <h3 className=" font-bold">
                 {news.title}
               </h3>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section id="more-news-hl" className="grid grid-cols-1 gap-y-2 px-2 mt-2">
+        <div>
+          <h2 className="text-2xl">More News Headlines</h2>
+        </div>
+        {newsItems.slice(5, 20).map((news, index) => (
+          <div key={news.newsId}>
+            <div
+              className={`border-b-2 border-newsGray ${
+                index === newsItems.length - 1 ? "last:border-b-0" : ""
+              }`}
+            >
+              <h3 className="flex justify-right font-bold p-1">
+                {news.title}
+              </h3>
+              <a className=""> Source </a>
             </div>
           </div>
         ))}

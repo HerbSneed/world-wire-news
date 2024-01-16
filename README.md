@@ -27,13 +27,14 @@ Introducing "WorldWire" - the ultimate platform for travelers to connect with ne
 * npm run seed
 * npm run develop
 ## Motivation
-Our motivation for this project was discussed between two of our memebers before the team was grouped, however they felt they wanted to make a news website featuring world-wide news. There are other website made where you can watch tv shows or series from around the world, so why not world news?
+
+
 ## Future Development
 * Migrating away from Heroku; Digial Ocean, Humalect or Netlify.
 * Search Bar to Look for Locations; Look Through the Existing APIs for the Search Bar
 * Having The Option to Look at City and Town News Rather Than Just Country.
 * Using Flags and New Source Icons to match the Country Where the News is Being Retrieved From.
-* Adding a Secction in the User's Homepage That Pulls All Default News Headlines Chosen From Registration.
+* Adding a Section in the User's Homepage That Pulls All Default News Headlines Chosen From Registration.
 * Adding a Page for "Request Again" After Sending an Email of Forgetting Password, Requesting a Code before Confirming New Password.
 ## Technologies
 1. React
@@ -51,9 +52,6 @@ Herb: [GitHub](https://github.com/HerbSneed) -- [LinkedIn](https://www.linkedin.
 <br>
 <br>
 Illir: [GitHub](https://github.com/IlirHajdari) -- [Email](ilir.hajdari111@gmail.com)
-<br>
-<br>
-Chandler: [GitHub](https://github.com/Ch4nd1erB1ng) -- [Email](chandaman1001@gmail.com)
 <br>
 <br>
 Laura: [GitHub](https://github.com/LJJordan124) -- [LinkedIn](https://www.linkedin.com/in/laura-jordan-510412241/) -- [Email](jordan3313.lj@gmail.com)

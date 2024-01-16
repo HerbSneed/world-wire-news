@@ -24,17 +24,30 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />} errorElement={<Error />}>
       <Route index element={<Landing />} />
-      <Route path="search-news" element={<SearchNews />} />
-      <Route path="login" element={<Login />} />
-      <Route path="register" element={<Register />} />
-      <Route path="forgotPassword" element={<ForgotPassword />} />
-      <Route path="homepage" element={
+      <Route path="/search-news" element={<SearchNews />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgotPassword" element={<ForgotPassword />} />
+      <Route
+        path="/homepage"
+        element={
           <ProtectedRoute>
             <Homepage />
           </ProtectedRoute>
         }
       />
-      <Route path="dashboard" element={
+      <Route
+        path="/homepage/:code" 
+        element={
+        <ProtectedRoute>
+        <Homepage />
+        </ProtectedRoute>
+        } 
+      />
+
+      <Route
+        path="dashboard"
+        element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
