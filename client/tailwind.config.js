@@ -16,6 +16,7 @@ export default {
       newsBlue: "#2E368F",
       newsGrayBlue: "#717F94",
       newsBlack: "#000000",
+      cardBlue: "#4561BF",
     },
     extend: {},
   },

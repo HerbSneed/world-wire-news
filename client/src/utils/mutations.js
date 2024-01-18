@@ -61,24 +61,26 @@ export const SAVE_NEWS = gql`
   }
 `;
 
+// Replace the existing DELETE_NEWS mutation definition
 export const DELETE_NEWS = gql`
   mutation deleteNews($newsId: ID!) {
-    deleteNews(newsId: $newsId) {
-      _id
-      email
-      savedNews {
-        newsId
-        title
-        summary
-        source_country
-        url
-        image
-        language
-        latest_publish_date
-      }
+  deleteNews(newsId: $newsId) {
+    _id
+    email
+    savedNews {
+      newsId
+      title
+      summary
+      source_country
+      url
+      image
+      language
+      latest_publish_date
     }
   }
+}
 `;
+
 
 export const FORGOT_PASSWORD = gql`
   mutation ForgotPassword($email: String!) {

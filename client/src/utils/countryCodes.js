@@ -1,5 +1,5 @@
-const countryCodes = () => [
-  { code: "World", name: "World", code3: "WORLD" },
+const countryCodes = [
+  { code: "World", name: "World", code3: "WLD" },
   { code: "US", name: "United States", code3: "USA" },
   { code: "CN", name: "China", code3: "CHN" },
   { code: "RU", name: "Russia", code3: "RUS" },
@@ -44,7 +44,7 @@ const countryCodes = () => [
   { code: "NO", name: "Norway", code3: "NOR" },
   { code: "IE", name: "Ireland", code3: "IRL" },
   { code: "NZ", name: "New Zealand", code3: "NZL" },
-  { code: "SG", name: "Singapore", code3: "SGP" },
+  { code: "SG", name: "Singapore", code3: "SGP" }
 ];
 
 export { countryCodes };

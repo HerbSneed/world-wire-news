@@ -1,50 +1,57 @@
 import { useEffect, useState } from 'react';
-
 import { Container, Card, Button, Row, Col } from 'react-bootstrap';
-
 import { useCurrentUserContext } from '../context/CurrentUser';
-
 import Auth from '../utils/auth';
 import { deleteNewsId } from '../utils/localStorage';
 import { useMutation, useQuery } from '@apollo/client';
 import { QUERY_CURRENT_USER } from '../utils/queries';
 import { DELETE_NEWS } from '../utils/mutations';
 
-const Dashboard = () => {
+const Dashboard = ({savedArticles}) => {
   const { currentUser } = useCurrentUserContext();
   console.log(currentUser);
+
   const { loading, data } = useQuery(QUERY_CURRENT_USER, {
     variables: { email: currentUser.email },
   });
-  console.log(data);
+  console.log("data", data);
   const userData = data?.currentUser || null;
-  // const [userData, setUserData] = useState(data?.currentUser || null);
+
   const [deleteNews, { error }] = useMutation(DELETE_NEWS);
-  // useEffect(() => setUserData(data?.currentUser || null), [data]);
 
   // create function that accepts the news's mongo _id value as param and deletes the news article from the database
-  const handleDeleteNews = async newsId => {
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
+const handleDeleteNews = async (newsId) => {
+  console.log("Button clicked"); 
 
-    if (!token) {
-      return false;
+  if(!Auth.loggedIn()) {
+    console.log("Not logged in");
+    return false;
+  }
+
+  const token = Auth.loggedIn() ? Auth.getToken() : null;
+
+  if (!token) {
+    console.log("Token not available");
+    return false;
+  }
+
+  try {
+    const { data } = await deleteNews({
+      variables: { newsId },
+    });
+
+    console.log("Mutation response:", data); 
+
+    if (!data?.deleteNews?.success) {
+      throw new Error("Failed to delete news.");
     }
 
-    try {
-      const response = await deleteNews({
-        variables: { newsId },
-      });
-
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      // upon success, remove book's id from localStorage
-      deleteNewsId(newsId);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    // Upon success, remove newsId from localStorage
+    deleteNewsId(newsId);
+  } catch (err) {
+    console.error("Error deleting news:", err.message);
+  }
+};
 
   // if data isn't here yet, say so
   if (!userData) {
@@ -54,41 +61,17 @@ const Dashboard = () => {
   return (
     <>
       <div
-        className="
-      relative
-      bg-newsGray
-      h-full
-      w-full
-      top-0
-      "
+        key={userData?.firstName}
+        className="relative bg-gray-200 pb-5 px-5 mx-auto w-[100%]"
       >
-        <div
-          className="
-        text-center 
-        text-3xl 
-        font-bold 
-        pt-2
-        "
-        >
-          <h1 class>{userData?.firstName}'s Saved News</h1>
+        <div className="text-center text-3xl font-bold pt-2">
+          <h1 >{userData.firstName}'s Saved News</h1>
         </div>
-        <div
-          className="
-        top-0 
-        w-full
-        "
-        >
-          <h2
-            className="
-          pt-0 
-          mb-2 
-          font-bold
-          text-center
-          "
-          >
+        <div className="top-0 w-full ">
+          <h2 className="pt-0 mb-2 font-bold text-center">
             {userData?.savedNews.length
               ? `${userData.savedNews.length} Saved Headlines`
-              : 'You have no saved news!'}
+              : "You have no saved news!"}
           </h2>
           <div
             className="
@@ -100,29 +83,31 @@ const Dashboard = () => {
           xl:grid-cols-3
           2xl:grid-cols-4
           gap-2
-          px-5"
+          px-3 py-3 border-2 rounded border-newsBlue"
           >
-            {userData?.savedNews.map(news => {
+            {userData?.savedNews.map((news) => {
+              const displayImage = news.image || news.source_country;
               return (
                 <div
+                  key={news.newsId}
                   className="
                     mb-2 
                     w-full
-                    bg-newsGrayBlue 
+                    bg-newsGray 
                     rounded 
                     shadow-xl"
                 >
                   <Card key={news.newsId}>
-                    {news.image ? (
+                    {displayImage ? (
                       <Card.Img
-                        src={news.image}
+                        src={displayImage}
                         alt={`Cover image for ${news.title}`}
                         variant="top"
-                        className="rounded shadow-xl"
+                        className="rounded-t shadow-lg"
                       />
                     ) : null}
                     <Card.Body className="p-3">
-                      <Card.Title className="font-bold text-white text-lg">
+                      <Card.Title className="font-bold text-gray-800 text-lg">
                         {news.title}
                       </Card.Title>
 
@@ -130,15 +115,19 @@ const Dashboard = () => {
                         {news.summary}
                       </Card.Text>
 
-                      <a className="text-blue-600" href={news.url}>
-                        Read the full article here!
+                      <a
+                        className="text-blue-600"
+                        href={news.url}
+                        target="_blank"
+                      >
+                        Source
                       </a>
 
                       <Button
                         className="btn-block text-red-600 btn-danger float-right"
                         onClick={() => handleDeleteNews(news.newsId)}
                       >
-                        Delete this article!
+                        Delete article
                       </Button>
                     </Card.Body>
                   </Card>

@@ -46,6 +46,7 @@ const resolvers = {
       }
 
       const token = signToken(user);
+      console.log(user);
 
       return { token, currentUser: user };
     },
@@ -72,11 +73,16 @@ const resolvers = {
 
     deleteNews: async (parent, { newsId }, context) => {
       if (context.user) {
-        return User.findOneAndUpdate(
+        const updatedUser = await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $pull: { savedNews: newsId } },
+          { $pull: { savedNews: { newsId  } } },
           { new: true }
         );
+
+        if(!updatedUser) {
+          throw new AuthenticationError("Couldn't find user with this id!");
+        }
+        return updatedUser;
       }
       throw new AuthenticationError("User not authenticated");
     },

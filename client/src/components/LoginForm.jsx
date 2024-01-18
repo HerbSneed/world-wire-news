@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { Link, useNavigate } from 'react-router-dom';
-
+import Auth from '../utils/auth';
 import { LOGIN_USER, FORGOT_PASSWORD } from '../utils/mutations';
 
 import { useCurrentUserContext } from '../context/CurrentUser';
@@ -33,11 +33,13 @@ export default function Login() {
       });
       const { token, currentUser } = mutationResponse.data.login;
       loginUser(currentUser, token);
+      Auth.login(token);
       navigate('/dashboard');
     } catch (e) {
       console.log(e);
     }
   };
+
 
   const handleChange = event => {
     const { name, value } = event.target;
@@ -59,6 +61,10 @@ export default function Login() {
       setResetFeedback('An error occurred. Please try again!');
     }
   };
+
+
+
+
 
   return (
     <>
